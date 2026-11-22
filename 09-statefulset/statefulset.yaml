@@ -1,0 +1,53 @@
+# Headless Service (clusterIP: None) gives each Pod its own DNS name.
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-headless
+  labels:
+    app: web-stateful
+spec:
+  clusterIP: None
+  selector:
+    app: web-stateful
+  ports:
+    - port: 80
+      name: http
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: web
+spec:
+  serviceName: web-headless     # ties Pods to the headless Service above
+  replicas: 3
+  selector:
+    matchLabels:
+      app: web-stateful
+  template:
+    metadata:
+      labels:
+        app: web-stateful
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27
+          ports:
+            - containerPort: 80
+              name: http
+          command: ["sh", "-c"]
+          args:
+            - |
+              # Write the Pod's own name to its own disk (only the first time)
+              [ -f /usr/share/nginx/html/index.html ] || echo "I am $(hostname)" > /usr/share/nginx/html/index.html
+              exec nginx -g 'daemon off;'
+          volumeMounts:
+            - name: data
+              mountPath: /usr/share/nginx/html
+  volumeClaimTemplates:         # one PVC is created PER Pod from this template
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi

@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: web-rs
+spec:
+  replicas: 3                   # desired number of Pods
+  selector:
+    matchLabels:
+      app: web                  # "manage Pods that have this label"
+  template:                     # the Pod blueprint
+    metadata:
+      labels:
+        app: web                # MUST match the selector above
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.26
+          ports:
+            - containerPort: 80

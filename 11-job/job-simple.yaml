@@ -1,0 +1,14 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: hello-job
+spec:
+  backoffLimit: 3                    # retry up to 3 times on failure
+  ttlSecondsAfterFinished: 300       # auto-delete 5 minutes after finishing
+  template:
+    spec:
+      restartPolicy: Never           # Jobs must use Never or OnFailure
+      containers:
+        - name: task
+          image: busybox:1.36
+          command: ["sh", "-c", "echo 'Processing data...'; sleep 5; echo 'Done!'"]

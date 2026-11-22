@@ -1,0 +1,12 @@
+apiVersion: v1          # Pods are part of the core API group
+kind: Pod
+metadata:
+  name: hello-pod
+  labels:
+    app: hello          # labels are how other objects find this Pod
+spec:
+  containers:
+    - name: nginx
+      image: nginx:1.27
+      ports:
+        - containerPort: 80

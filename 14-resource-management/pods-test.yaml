@@ -1,0 +1,32 @@
+# This Pod asks for more than LimitRange allows (max 500m CPU): it will be REJECTED.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: too-big
+  namespace: team-a
+spec:
+  containers:
+    - name: app
+      image: nginx:1.27
+      resources:
+        limits:
+          cpu: "2"
+          memory: 1Gi
+---
+# This Pod fits within the rules and will be created.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: just-right
+  namespace: team-a
+spec:
+  containers:
+    - name: app
+      image: nginx:1.27
+      resources:
+        requests:
+          cpu: 100m
+          memory: 64Mi
+        limits:
+          cpu: 200m
+          memory: 128Mi

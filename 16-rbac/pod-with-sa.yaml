@@ -1,0 +1,19 @@
+# Uses the Kubernetes API from inside a Pod with the ServiceAccount's token.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sa-demo
+  namespace: rbac-demo
+spec:
+  serviceAccountName: pod-reader-sa
+  restartPolicy: Never
+  containers:
+    - name: kubectl
+      image: bitnami/kubectl:latest
+      command: ["sh", "-c"]
+      args:
+        - |
+          echo "Listing pods (allowed):"
+          kubectl get pods -n rbac-demo
+          echo "Listing secrets (forbidden):"
+          kubectl get secrets -n rbac-demo || true

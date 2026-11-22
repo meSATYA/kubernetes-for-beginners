@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-backend-to-database
+  namespace: netpol-demo
+spec:
+  podSelector:
+    matchLabels:
+      app: database             # this policy protects the database Pod
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              role: backend     # only Pods labelled role=backend may connect
+      ports:
+        - protocol: TCP
+          port: 80

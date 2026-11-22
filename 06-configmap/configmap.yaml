@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  # simple key/value pairs
+  APP_COLOR: "blue"
+  APP_MODE: "development"
+  # a whole file as one value
+  app.properties: |
+    log.level=debug
+    feature.newUI=true

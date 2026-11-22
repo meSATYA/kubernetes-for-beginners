@@ -1,0 +1,86 @@
+# eks-cluster.yaml
+# Simple EKS cluster for demos: 2 x t3.small (2 vCPU, 2 GiB) worker nodes.
+#
+# Usage:
+#   eksctl create cluster -f eks-cluster.yaml --dry-run   # preview (optional)
+#   eksctl create cluster -f eks-cluster.yaml             # takes ~15 minutes
+#   eksctl delete cluster -f eks-cluster.yaml             # clean up when done
+#
+# Run these as the IAM user who should become cluster admin.
+
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: demo-eks
+  region: ap-southeast-2
+  # Use a version that is in STANDARD support (extended support costs 6x more).
+  # Check: aws eks describe-cluster-versions --region ap-south-1
+  version: "1.36"
+  tags:
+    purpose: demo
+    owner: shift2tech
+
+# Pin two AZs so the nodes land only where t3.small is offered.
+# Verify: aws ec2 describe-instance-type-offerings --location-type availability-zone \
+#           --filters Name=instance-type,Values=t3.small --region ap-south-1
+availabilityZones: ["ap-southeast-2a", "ap-southeast-2b"]
+
+# ---------------------------------------------------------------------------
+# Admin access
+# bootstrapClusterCreatorAdminPermissions: true (the default, made explicit here)
+# gives the IAM identity that runs "eksctl create cluster" an access entry with
+# AmazonEKSClusterAdminPolicy at cluster scope = full cluster-admin rights.
+# Do NOT add a second access entry for the same creator: it would conflict.
+# ---------------------------------------------------------------------------
+accessConfig:
+  authenticationMode: API_AND_CONFIG_MAP
+  bootstrapClusterCreatorAdminPermissions: true
+  # Optional: give ANOTHER IAM user/role admin rights too.
+  # accessEntries:
+  #   - principalARN: arn:aws:iam::<ACCOUNT_ID>:user/<other-user>
+  #     accessPolicies:
+  #       - policyARN: arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy
+  #         accessScope:
+  #           type: cluster
+
+# ---------------------------------------------------------------------------
+# Network
+# No NAT gateway (saves ~$33/month). Nodes sit in public subnets with public
+# IPs so they can pull images and join the cluster. Security groups still block
+# all inbound traffic from the internet. Fine for a demo, not for production.
+# ---------------------------------------------------------------------------
+vpc:
+  nat:
+    gateway: Disable
+
+# ---------------------------------------------------------------------------
+# Worker nodes: exactly 2 (min = max = desired)
+# ---------------------------------------------------------------------------
+managedNodeGroups:
+  - name: demo-ng
+    instanceType: t3.small          # 2 vCPU, 2 GiB; Free Tier eligible only on accounts created on/after 15 Jul 2025
+    amiFamily: AmazonLinux2023      # Amazon Linux 2 AMIs are retired for current EKS versions
+    desiredCapacity: 2
+    minSize: 2
+    maxSize: 2
+    volumeSize: 20                  # GiB
+    volumeType: gp3
+    privateNetworking: false        # public subnets, because NAT is disabled above
+    labels:
+      role: worker
+    tags:
+      purpose: demo
+
+# ---------------------------------------------------------------------------
+# Optional: needed by lessons 08/09 (PVC, StatefulSet) and 15 (HPA) in the
+# k8s-objects-for-beginners repo. Uncomment BOTH blocks to install them at
+# creation time, or add them later with "eksctl create addon".
+# ---------------------------------------------------------------------------
+# iam:
+#   withOIDC: true
+# addons:
+#   - name: aws-ebs-csi-driver
+#     wellKnownPolicies:
+#       ebsCSIController: true
+#   - name: metrics-server
